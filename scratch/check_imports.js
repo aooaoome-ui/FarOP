@@ -46,7 +46,7 @@ files.forEach(file => {
       names.forEach(name => {
         // Look for export function name, export const name, export class name, export let name, export default name
         // Or export { ... name ... }
-        const exportRegex1 = new RegExp(`export\\s+(function|const|let|var|class|async\\s+function)\\s+\\b${name}\\b`);
+        const exportRegex1 = new RegExp(`export\\s+(function|const|let|var|class|async\\s+function)\\s+[^;]*?\\b${name}\\b`);
         const exportRegex2 = new RegExp(`export\\s+\\{[^}]*?\\b${name}\\b[^}]*?\\}`);
         
         const hasExport = exportRegex1.test(targetContent) || exportRegex2.test(targetContent);

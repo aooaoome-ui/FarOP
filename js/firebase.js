@@ -10,12 +10,12 @@ import { _fbReady, _nextBatchId, _nextCalId, _nextProjId, _nextReqId, _nextSaleI
 // ============================================================
 // วิธีดู config: Firebase Console → Project Settings → Your apps → SDK setup
 const FIREBASE_CONFIG = {
-  apiKey:            "AIzaSyD5dELInboToPXiwEpkz6o2AMGMSyS17-o",
-  authDomain:        "farm-toeng-6bc40.firebaseapp.com",
-  projectId:         "farm-toeng-6bc40",
-  storageBucket:     "farm-toeng-6bc40.firebasestorage.app",
-  messagingSenderId: "208490929012",
-  appId:             "1:208490929012:web:7821a1b73fe0996bfbea21"
+  apiKey:            "AIzaSyCXvbUD9TlLkG99-DiGOeBc6k8AELuMuqs",
+  authDomain:        "facefarm-318ee.firebaseapp.com",
+  projectId:         "facefarm-318ee",
+  storageBucket:     "facefarm-318ee.firebasestorage.app",
+  messagingSenderId: "997117081360",
+  appId:             "1:997117081360:web:b6875a5a7abe025fa99795"
 };
 
 // ============================================================
@@ -162,6 +162,218 @@ export async function loadData() {
     const raw = localStorage.getItem(LS_KEY);
     if (raw) { _applyData(JSON.parse(raw)); console.log('💾 โหลดจาก localStorage'); }
   } catch(e) {}
+}
+
+// ── Clean Mock Data From Existing ──
+export function cleanMockDataFromExisting() {
+  if (localStorage.getItem('mockDataCleaned_v2')) return;
+  
+  let changed = false;
+  
+  const mockCropNames = new Set([
+    'ผักคะน้าใบใหญ่', 'มะเขือเทศราชินี', 'ข้าวโพดหวาน', 'พริกแดงใหญ่',
+    'กระเทียมโทน', 'ผักบุ้งจีน', 'ฟักทองไทย', 'ตะไคร้หอม', 'ผักชีไทย',
+    'ขิงอ่อน', 'ใบมะกรูด', 'มะนาวแป้น', 'ผักกาดขาวปลี', 'หอมแดงพม่า',
+    'กระชายเหลือง', 'ผักเคล (Kale)', 'พริกหวานหลากสี', 'ดาวเรืองส้ม',
+    'ไพล', 'มะระจีน'
+  ]);
+  
+  // 1. Crops
+  const originalCropCount = cropItems.length;
+  const userCrops = cropItems.filter(item => !(item.id < 21 && mockCropNames.has(item.name)));
+  if (userCrops.length !== originalCropCount) {
+    cropItems.length = 0;
+    userCrops.forEach(x => cropItems.push(x));
+    setNextCropId(Math.max(...cropItems.map(item => item.id), 0) + 1);
+    changed = true;
+  }
+  
+  // 2. Activities: Mock activities are those with ID < 37
+  const originalActCount = actItems.length;
+  const userActs = actItems.filter(item => item.id >= 37);
+  if (userActs.length !== originalActCount) {
+    actItems.length = 0;
+    userActs.forEach(x => actItems.push(x));
+    setNextActId(Math.max(...actItems.map(item => item.id), 0) + 1);
+    changed = true;
+  }
+  
+  // 3. Customers
+  const mockCustNames = new Set([
+    'ตลาดสดเช้าลำปาง', 'ร้านอาหารครัวไทย', 'คุณนุ่น (ลูกค้าประจำ)',
+    'ออนไลน์ Facebook', 'โรงแรมเวียงลคอร', 'Tops Supermarket ลำปาง',
+    'คลินิกสุขภาพธรรมชาติ', 'ร้านก๋วยเตี๋ยวเจ้าเก่า'
+  ]);
+  const originalCustCount = custItems.length;
+  const userCusts = custItems.filter(item => !(item.id < 9 && mockCustNames.has(item.name)));
+  if (userCusts.length !== originalCustCount) {
+    custItems.length = 0;
+    userCusts.forEach(x => custItems.push(x));
+    setNextCustId(Math.max(...custItems.map(item => item.id), 0) + 1);
+    changed = true;
+  }
+  
+  // 4. Inventory
+  const mockInvNames = new Set([
+    'ปุ๋ยหมักอินทรีย์', 'น้ำส้มควันไม้', 'เมล็ดพันธุ์ผักคะน้า', 'เมล็ดมะเขือเทศราชินี',
+    'ท่อน้ำหยด PE', 'ถุงบรรจุผัก 500g', 'ไม้ค้ำยันมะเขือ', 'น้ำหมักชีวภาพ EM',
+    'ตาข่ายกันแมลง', 'เมล็ดพันธุ์ผักบุ้ง', 'ปูนขาวปรับ pH', 'สายยางรด 2 นิ้ว',
+    'กล่องกระดาษบรรจุผัก', 'ถุงมือยาง', 'สเปรย์สะเดา'
+  ]);
+  const originalInvCount = invItems.length;
+  const userInvs = invItems.filter(item => !(item.id < 21 && (mockInvNames.has(item.name) || item.cat === 'ผลผลิต')));
+  if (userInvs.length !== originalInvCount) {
+    invItems.length = 0;
+    userInvs.forEach(x => invItems.push(x));
+    setNextInvId(Math.max(...invItems.map(item => item.id), 0) + 1);
+    changed = true;
+  }
+  
+  // 5. SalesData
+  const originalSalesCount = salesData.length;
+  const userSales = salesData.filter(item => !(item._id < 40 && mockCropNames.has(item.product)));
+  if (userSales.length !== originalSalesCount) {
+    salesData.length = 0;
+    userSales.forEach(x => salesData.push(x));
+    setNextSaleId(Math.max(...salesData.map(item => item._id), 0) + 1);
+    changed = true;
+  }
+  
+  // 6. Calendar
+  const mockCalTitles = new Set([
+    'เก็บเกี่ยวผักคะน้าใบใหญ่', 'ส่ง Tops Supermarket', 'เก็บเกี่ยวผักบุ้งจีน',
+    'ใส่ปุ๋ยหมักรอบเดือน', 'ยื่นเอกสาร Organic มกอช.', 'เก็บเกี่ยวผักเคล',
+    'ตรวจสุขภาพดินรายเดือน', 'ประชุมทีมงานประจำเดือน', 'สั่งซื้อถุงบรรจุผักด่วน',
+    'เก็บเกี่ยวมะเขือเทศราชินี', 'เก็บเกี่ยวผักชีไทย', 'ตรวจรับงานระบบน้ำแปลง F',
+    'เก็บเกี่ยวผักกาดขาวปลี', 'เก็บเกี่ยวดาวเรืองส้ม', 'สิ้นเดือน — สรุปยอดขาย พ.ค.',
+    'ปลูกพืชรอบใหม่ แปลง A', 'เก็บเกี่ยวข้าวโพดหวาน'
+  ]);
+  const originalCalCount = calEvents.length;
+  const userCalEvents = calEvents.filter(item => !(item.id < 18 && mockCalTitles.has(item.title)));
+  if (userCalEvents.length !== originalCalCount) {
+    calEvents.length = 0;
+    userCalEvents.forEach(x => calEvents.push(x));
+    setNextCalId(Math.max(...calEvents.map(item => item.id), 0) + 1);
+    changed = true;
+  }
+  
+  // 7. Projects
+  const mockProjNames = new Set([
+    'ขยายระบบน้ำหยด Phase 2', 'ขอรับรองมาตรฐาน Organic Thailand',
+    'เปิดช่องทางขายตรง CSA Box', 'โรงเรือนเพาะกล้าใหม่'
+  ]);
+  const originalProjCount = projectItems.length;
+  const userProjects = projectItems.filter(item => !(item.id < 5 && mockProjNames.has(item.name)));
+  if (userProjects.length !== originalProjCount) {
+    projectItems.length = 0;
+    userProjects.forEach(x => projectItems.push(x));
+    setNextProjId(Math.max(...projectItems.map(item => item.id), 0) + 1);
+    changed = true;
+  }
+  
+  if (changed) {
+    console.log('🧹 Cleaned mock data from existing database.');
+    saveData();
+  }
+  
+  localStorage.setItem('mockDataCleaned_v2', 'true');
+}
+
+// ── Sanitize Database IDs and Counters ──
+export function fixDuplicateIdsAndCounters() {
+  let changed = false;
+
+  const fixArray = (arr, idField, nextIdGetter, nextIdSetter) => {
+    const seen = new Set();
+    let maxId = 0;
+    
+    // First pass: find max existing ID among non-duplicates
+    arr.forEach(item => {
+      const id = item[idField];
+      if (!seen.has(id)) {
+        seen.add(id);
+        if (id > maxId) maxId = id;
+      }
+    });
+
+    // Second pass: re-assign duplicate IDs
+    seen.clear();
+    arr.forEach(item => {
+      const id = item[idField];
+      if (seen.has(id)) {
+        maxId++;
+        item[idField] = maxId;
+        console.log(`🧹 Fixed duplicate ID in array: re-assigned ${id} to ${maxId}`);
+        changed = true;
+      } else {
+        seen.add(id);
+        if (id > maxId) maxId = id;
+      }
+    });
+
+    // Enforce nextId counter is at least maxId + 1
+    const currentNextId = nextIdGetter();
+    if (currentNextId <= maxId) {
+      nextIdSetter(maxId + 1);
+      changed = true;
+    }
+  };
+
+  // Run for all models
+  fixArray(cropItems, 'id', () => nextCropId, setNextCropId);
+  fixArray(actItems, 'id', () => nextActId, setNextActId);
+  fixArray(custItems, 'id', () => nextCustId, setNextCustId);
+  fixArray(invItems, 'id', () => nextInvId, setNextInvId);
+  fixArray(salesData, '_id', () => _nextSaleId, setNextSaleId);
+  fixArray(calEvents, 'id', () => _nextCalId, setNextCalId);
+  fixArray(projectItems, 'id', () => _nextProjId, setNextProjId);
+
+  if (changed) {
+    console.log('⚡ Database IDs and counters sanitized successfully.');
+    saveData();
+  }
+}
+
+// ── Force Wipe All Data (User Request) ──
+export function forceWipeAllData() {
+  if (localStorage.getItem('userRequestedWipeCompleted_v3')) return;
+  
+  // Clear all arrays
+  cropItems.length = 0;
+  actItems.length = 0;
+  custItems.length = 0;
+  invItems.length = 0;
+  salesData.length = 0;
+  calEvents.length = 0;
+  projectItems.length = 0;
+  
+  // Reset counters
+  setNextCropId(1);
+  setNextActId(1);
+  setNextCustId(1);
+  setNextInvId(1);
+  setNextSaleId(1);
+  setNextCalId(1);
+  setNextProjId(1);
+  
+  // Write the clean, empty state back to LocalStorage
+  localStorage.setItem(LS_KEY, JSON.stringify(_packData()));
+  
+  // Write the clean, empty state back to Firebase
+  if (_fbReady) {
+    db.collection('farms').doc(FARM_ID).set(_packData())
+      .then(() => {
+        console.log('☁️ Firebase database wiped and initialized with clean state.');
+      })
+      .catch(e => {
+        console.warn('Firebase wipe failed:', e);
+      });
+  }
+  
+  localStorage.setItem('userRequestedWipeCompleted_v3', 'true');
+  // Also force flags so they do not run migrations on empty db
+  localStorage.setItem('mockDataCleaned_v2', 'true');
+  console.log('🧹 Database fully wiped and reset to clean state.');
 }
 
 // ── Auto-save wrappers ──

@@ -3,13 +3,13 @@
 
 import { aiQuickAsk, onProviderChange, saveAiKey, sendAiMessage, toggleAiPanel } from './ai.js';
 import { calCellClick, calNext, calPrev, openCalEventModal, renderCalendar, saveCalEvent, setCalView, showCalDetail } from './calendar.js';
-import { initDashboardChart, renderDashChart, renderSalesCharts, setDashChartType, setDashPeriod, setSalesChartType, setSalesPeriod, setSalesWChartType, setSalesWPeriod } from './charts.js';
+import { initDashboardChart, renderDashChart, renderSalesCharts, setDashChartType, setDashPeriod, setSalesChartType, setSalesPeriod, setSalesWChartType, setSalesWPeriod, buildReportCharts } from './charts.js';
 import { editActItem, editCropItem, handleActPlotChange, handleActTypeChange, openActivityModal, openCropModal, saveActivityItem, saveCropItem , renderCrops, renderActivities} from './crops.js';
 import { openCustHistory, openCustHistoryByName } from './customerHistory.js';
 import { editCustItem, openCustModal, saveCustItem , renderCustomers} from './customers.js';
 import { _doExport, _exportToggleAll, _onExportRowChk, _rebuildExportRows, openExportModal } from './export.js';
 import { fabAction } from './fab.js';
-import { clearAllData , setupAutoSave} from './firebase.js';
+import { clearAllData , setupAutoSave, saveData} from './firebase.js';
 import { openGoalModal, prefillGoalCrop, saveGoalItem } from './goals.js';
 import { addHarvestEntry, openHarvestLogModal, removeHarvestEntry } from './harvestLog.js';
 import { _toggleShelfFields, adjustQty, clearInvSearch, disposeAllOverstock, disposeItem, disposeSelectedOverstock, editInvItem, gotoInvPage, markAsOverstock, onInvSearch, openInvModal, saveInvItem, toggleAllOverstock , renderInv} from './inventory.js';
@@ -21,12 +21,14 @@ import { openPlotActs } from './plotActivities.js';
 import { addTimelineStep, deleteProject, deleteTimelineStep, editCurrentProject, openProjectDetail, openProjectModal, openTimelineModal, quickUpdateStep, renderProjects, saveProject, setProjView } from './projects.js';
 import { exportReportExcel, exportReportPDF, renderReports, setRptChartType, setRptTab } from './reports.js';
 import { _updateSaleStockPreview, calcSaleTotal, onSaleProductSelect, onSaleTotalInput, onSeProductSelect, onSeTotalInput, openSaleModal, saveSale, toggleHarvestDate, toggleSaleProductInput, toggleSaleTotalAuto, toggleSeProductInput, toggleSeTotalAuto } from './sales.js';
-import { calcSeTotal, editSaleItem, saveSaleEdit , patchExecDel} from './salesLink.js';
+import { calcSeTotal, editSaleItem, saveSaleEdit , patchExecDel, renderSales} from './salesLink.js';
 import { _updateSelBar, clearSelected, deleteSelected, toggleCheckAll } from './selection.js';
 import { addPlot, addWorker, exportData, handleActPersonChange, importDataPrompt, removePlot, removeWorker, saveSettingsDefaults, saveSettingsFarm } from './settings.js';
 import { askConfirmDel, execDel } from './shared.js';
 import { closeModal, closeSidebar, navigate, setBottomNav, toggleSidebar , showToast } from './ui.js';
 import { bootApp } from './boot.js';
+import { renderDashboard } from './dashboard.js';
+import { setDelContext } from './state.js';
 
 // Expose all HTML-callable functions to window
 // (Required because ES modules are scoped — inline onclick cannot see them)
@@ -190,6 +192,11 @@ Object.assign(window, {
   navigate,
   setBottomNav,
   toggleSidebar,
+  renderDashboard,
+  renderSales,
+  saveData,
+  buildReportCharts,
+  setDelContext,
 });
 
 

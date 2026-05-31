@@ -4,7 +4,7 @@ import { renderSalesCharts, buildReportCharts } from './charts.js';
 import { deductProduceStock, renderInv } from './inventory.js';
 import { _pgState, _renderSalesPage } from './pagination.js';
 import { _buildProductOptions, _getInvIdFromSelectVal, _getSaleTotal } from './sales.js';
-import { _delContext, editingSaleId, invItems, salesData, setEditingSaleId } from './state.js';
+import { _delContext, editingSaleId, invItems, salesData, setEditingSaleId, setDelContext } from './state.js';
 import { closeModal, showToast } from './ui.js';
 
 // ============================================================
@@ -118,7 +118,7 @@ export function patchExecDel() {
       window.renderSales(); window.renderDashboard();
       setTimeout(() => window.buildReportCharts && window.buildReportCharts(), 100);
       window.closeModal('modal-confirm-del');
-      window.setDelContext(null);
+      setDelContext(null);
       window.showToast('🗑 ลบรายการขายแล้ว');
       return;
     }

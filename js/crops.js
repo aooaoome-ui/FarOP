@@ -15,6 +15,7 @@ export const cropStatusMap = {
   'กำลังโต':      { cls:'badge-amber', color:'#e8a820' },
   'พร้อมเก็บ':    { cls:'badge-green', color:'#5cb85c' },
   'เก็บเกี่ยวแล้ว':{ cls:'badge-gray', color:'#9a9890' },
+  'เสียหาย/ตาย':  { cls:'badge-red',   color:'#e04040' },
 };
 
 export function renderCrops() {
@@ -70,10 +71,10 @@ export function saveCropItem() {
   const planted     = document.getElementById('crop-planted').value;
   const isCont      = document.getElementById('crop-harvest-cont').checked;
   const harvestDateRaw = document.getElementById('crop-harvest').value || '';
-  // ── วันเก็บเกี่ยว: ถ้าไม่ใส่ → ใช้วันปัจจุบัน (ยกเว้น "ต่อเนื่อง") ──
-  const harvestDate = isCont ? '' : (harvestDateRaw || dateStr);
-  const harvest     = isCont ? 'ต่อเนื่อง'
-                    : new Date(harvestDate).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'});
+  // ── วันเก็บเกี่ยว: ถ้าไม่ใส่ → ปล่อยว่าง (ไม่บังคับใช้วันปัจจุบันเพื่อไม่ให้กระทบการคำนวณสถานะอัติโนมัติ) ──
+  let harvestDate = isCont ? '' : harvestDateRaw;
+  let harvest     = isCont ? 'ต่อเนื่อง'
+                    : (harvestDate ? new Date(harvestDate).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'}) : '—');
   const area        = parseFloat(document.getElementById('crop-area').value) || 0;
   const yieldEst    = parseInt(document.getElementById('crop-yield-est').value) || 0;
   const yieldActualInput = document.getElementById('crop-yield-actual').value;
@@ -83,6 +84,15 @@ export function saveCropItem() {
     document.getElementById('crop-status').value = 'เก็บเกี่ยวแล้ว';
   }
   const status = document.getElementById('crop-status').value;
+
+  // ── ป้องกันการล็อคสถานะโดยระบบอัปเดตอัตโนมัติ: ──
+  // ถ้าพืชอยู่ในสถานะเติบโต/กำลังพัฒนา แต่วันเก็บเกี่ยวอยู่ในอดีตหรือวันนี้ ให้ล้างวันเก็บเกี่ยวเพื่อเลี่ยงการรีเซ็ตกลับเป็น "พร้อมเก็บ"
+  const GROWING_STATUSES = new Set(['เพาะกล้า', 'ย้ายกล้า', 'เติบโต', 'กำลังโต']);
+  if (GROWING_STATUSES.has(status) && harvestDate && harvestDate <= dateStr) {
+    harvestDate = '';
+    harvest = '—';
+    showToast('💡 วันเก็บเกี่ยวที่คาดไว้หมดอายุแล้ว ระบบปรับวันเก็บเกี่ยวเป็นแบบกำหนดเอง (—) เพื่อคงสถานะ "' + status + '"');
+  }
   if (!name) { showToast('⚠️ กรุณากรอกชื่อพืชผล'); return; }
 
   let prevStatus = null;
@@ -102,9 +112,7 @@ export function saveCropItem() {
       ? [{ date: harvestDate, weight: yieldActualNew, note: '' }] : [];
     cropItems.push({ id: nextCropId, name, cropType, plot, planted, harvest, harvestDate, area, status,
       yieldEst, yieldActual: yieldActualNew || '', harvestLog });
-  setNextCropId(nextCropId + 1);
-  setNextActId(nextActId + 1);
-  setNextInvId(nextInvId + 1);
+    setNextCropId(nextCropId + 1);
     showToast('✅ เพิ่มพืชผลสำเร็จ');
   }
 
@@ -127,6 +135,21 @@ export function saveCropItem() {
       fromCrop: true
     });
     setActRendered(false);
+    setNextActId(nextActId + 1); // <-- ALWAYS INCREMENT WHEN PUSHED
+  } else if (status === 'เก็บเกี่ยวแล้ว' && prevStatus === 'เก็บเกี่ยวแล้ว' && yieldActualNew !== null && yieldActualNew > 0) {
+    // ── auto-link activity สำหรับการเก็บเกี่ยวยอดใหม่ของพืชที่เคยเก็บเกี่ยวไปแล้ว ──
+    actItems.unshift({
+      id:       nextActId,
+      date:     harvestDate || dateStr,
+      type:     'เก็บเกี่ยว',
+      plot:     plot || '—',
+      person:   '—',
+      material: '—',
+      note:     `เก็บเกี่ยว ${name} ได้ ${yieldActualNew} กก. (รอบเพิ่มเติม)`,
+      fromCrop: true
+    });
+    setActRendered(false);
+    setNextActId(nextActId + 1); // <-- ALWAYS INCREMENT WHEN PUSHED
   }
 
   // ── auto-add to inventory: ใช้ harvestDate เป็น วันเข้าคลัง ──
@@ -142,6 +165,21 @@ export function saveCropItem() {
     });
     showToast('🌾 เพิ่มผลผลิตเข้าคลัง: ' + name + (qty > 0 ? ' ' + qty + ' กก.' : '') + ' · วันที่ ' + harvest);
     renderInv();
+    setNextInvId(nextInvId + 1); // <-- ALWAYS INCREMENT WHEN PUSHED
+  } else if (status === 'เก็บเกี่ยวแล้ว' && prevStatus === 'เก็บเกี่ยวแล้ว' && yieldActualNew !== null && yieldActualNew > 0) {
+    // ── auto-add to inventory สำหรับการเก็บเกี่ยวยอดใหม่ของพืชที่เคยเก็บเกี่ยวไปแล้ว ──
+    const qty    = Number(yieldActualNew);
+    const lotNum = invItems.filter(i => i.cat === 'ผลผลิต' && i.name === name).length + 1;
+    invItems.push({
+      id: nextInvId, name, cat: 'ผลผลิต', qty, unit: 'กก.',
+      price: 0, threshold: 0, shelfLife: farmSettings.shelfLife || 7,
+      harvestDate: harvestDate,
+      lot: 'Crop ' + lotNum,
+      lastOrder: harvestDate
+    });
+    showToast('🌾 เพิ่มผลผลิตเข้าคลัง (รอบเพิ่มเติม): ' + name + ' ' + qty + ' กก. · วันที่ ' + harvest);
+    renderInv();
+    setNextInvId(nextInvId + 1); // <-- ALWAYS INCREMENT WHEN PUSHED
   }
 
   closeModal('modal-crop');

@@ -310,11 +310,16 @@ export function _autoUpdateCropStatuses() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayISO = today.toISOString().slice(0, 10);
+  // สถานะที่ไม่ควรถูกเปลี่ยนอัตโนมัติ (ผู้ใช้ตั้งค่าเองแล้ว)
   const SKIP = new Set(['เก็บเกี่ยวแล้ว', 'เสียหาย/ตาย', 'พร้อมเก็บ']);
+  // สถานะที่อนุญาตให้เปลี่ยนเป็น "พร้อมเก็บ" อัตโนมัติได้ (เฉพาะระยะเติบโตที่ใกล้จะถึงกำหนด)
+  const GROWABLE = new Set(['กำลังโต', 'เติบโต']);
   let changed = false;
   cropItems.forEach(c => {
     if (!c.harvestDate || SKIP.has(c.status)) return;
-    if (c.harvestDate <= todayISO) {
+    // เปลี่ยนเป็น "พร้อมเก็บ" เฉพาะพืชที่อยู่ในระยะ กำลังโต/เติบโต เท่านั้น
+    // ไม่เปลี่ยนพืชที่อยู่ในระยะ เพาะกล้า/ย้ายกล้า (ยังเร็วเกินไป)
+    if (GROWABLE.has(c.status) && c.harvestDate <= todayISO) {
       c.status = 'พร้อมเก็บ';
       changed = true;
     }

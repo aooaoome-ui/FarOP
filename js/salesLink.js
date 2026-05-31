@@ -31,7 +31,7 @@ export function updateSaleStats(){
 
 export function editSaleItem(id){
   setEditingSaleId(id);
-  const item=salesData.find(s=>s._id===id);
+  const item=salesData.find(s=>String(s._id)===String(id));
   if(!item)return;
   _buildProductOptions('se-product-select', item.product);
   document.getElementById('se-date').value=item.date;
@@ -57,35 +57,35 @@ export function calcSeTotal(){
 }
 
 export function saveSaleEdit(){
-  const item=salesData.find(s=>s._id===editingSaleId);
-  if(!item)return;
-  const w=parseFloat(document.getElementById('se-weight').value)||0;
-  const p=parseFloat(document.getElementById('se-price').value)||0;
-  const total = _getSaleTotal('se-total','se-total-auto') || (w * p);
+  const date    = document.getElementById('se-date').value;
+  const product = document.getElementById('se-product').value.trim();
+  const customer= document.getElementById('se-customer').value.trim();
+  const channel = document.getElementById('se-channel').value;
+  const w       = parseFloat(document.getElementById('se-weight').value)||0;
+  const p       = parseFloat(document.getElementById('se-price').value)||0;
+  const total   = parseFloat(document.getElementById('se-total').value.replace(/,/g,''))||0;
+  const payment = document.getElementById('se-payment').value;
 
-  // Restore old weight to the exact lot (use stored invId if available)
-  const oldInvId   = item.invId || null;
-  const oldProduct = item.product;
-  const oldWeight  = item.weight || 0;
+  if(!date||!product){ showToast('⚠️ กรุณากรอกข้อมูลสำคัญ'); return; }
+
+  const item=salesData.find(s=>String(s._id)===String(editingSaleId));
+  if(!item)return;
+
+  // Deduct/restore stock dynamically
+  // If product changed or weight changed
+  const oldInvId = item.invId;
+  const newInvId = _getInvIdFromSelectVal('se-product-select');
+
+  // Put old stock back (if any)
   const oldInv = oldInvId
-    ? invItems.find(i => i.id === oldInvId)
-    : invItems.find(i => i.cat === 'ผลผลิต' && i.name === oldProduct);
-  // Restore old weight silently, then deduct new amount
-  if (oldInv) {
-    oldInv.qty += oldWeight;
-    saveData();
+    ? invItems.find(i=>i.id===oldInvId)
+    : invItems.find(i=>i.cat==='ผลผลิต'&&i.name===item.product);
+  if(oldInv) {
+    oldInv.qty += (item.weight||0);
   }
 
-  item.date=document.getElementById('se-date').value;
-  const seProductVal = document.getElementById('se-product').value.trim();
-  const seSelectRaw  = document.getElementById('se-product-select').value;
-  const newInvId     = seProductVal ? null : _getInvIdFromSelectVal(seSelectRaw);
-  item.product = seProductVal || (seSelectRaw.startsWith('__inv__') ? seSelectRaw.split('__')[3] : seSelectRaw);
-  item.invId   = newInvId;
-  item.customer=document.getElementById('se-customer').value.trim();
-  item.channel=document.getElementById('se-channel').value;
-  item.weight=w; item.price=p; item.total=total;
-  item.payment=document.getElementById('se-payment').value;
+  // Update sale record
+  Object.assign(item, { date, product, invId: newInvId, customer, channel, weight:w, price:p, total, payment });
 
   // Deduct new weight (shows toast + saves)
   deductProduceStock(item.product, w, newInvId);
@@ -101,7 +101,7 @@ export function patchExecDel() {
   window.execDel = function() {
     const ctx = _delContext;
     if (ctx && ctx.ctx === 'sale') {
-      const idx = salesData.findIndex(s => s._id === ctx.id);
+      const idx = salesData.findIndex(s => String(s._id) === String(ctx.id));
       if (idx > -1) {
         const sold = salesData[idx];
         const restoreInv = sold.invId

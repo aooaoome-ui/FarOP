@@ -110,10 +110,10 @@ export function patchExecDel() {
         if (restoreInv) {
           restoreInv.qty += (sold.weight || 0);
           window.renderInv();
-          window.saveData && window.saveData();
           window.showToast(`↩️ คืนสต็อก ${sold.product} +${sold.weight} กก.`);
         }
         salesData.splice(idx, 1);
+        saveData(); // <--- ALWAYS PERSIST THE DELETION!
       }
       window.renderSales(); window.renderDashboard();
       setTimeout(() => window.buildReportCharts && window.buildReportCharts(), 100);
